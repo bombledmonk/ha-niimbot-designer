@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "NIIMBOT Label Designer",
+        "description": "Adds a Label Designer panel to the sidebar. Printing goes through the NIIMBOT integration, which must already be set up."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "The Label Designer is already set up."
+    }
+  },
+  "services": {
+    "reprint": {
+      "name": "Reprint label",
+      "description": "Print a label from the designer's library again.",
+      "fields": {
+        "entry_id": { "name": "Label ID", "description": "ID of the label in the library." },
+        "copies": { "name": "Copies", "description": "Number of copies to print." },
+        "device_id": { "name": "Printer", "description": "Printer to use when more than one is set up." }
+      }
+    }
+  }
+}

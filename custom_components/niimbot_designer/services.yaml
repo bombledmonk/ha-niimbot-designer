@@ -1,0 +1,17 @@
+reprint:
+  fields:
+    entry_id:
+      required: true
+      example: "3f2c9a0e5b8d4c6a9e1f2a3b4c5d6e7f"
+      selector:
+        text:
+    copies:
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 99
+    device_id:
+      selector:
+        device:
+          integration: niimbot
