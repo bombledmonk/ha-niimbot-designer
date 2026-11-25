@@ -33,13 +33,18 @@ from the panel or with the `niimbot_designer.reprint` action. Each print fires a
 
 On Home Assistant 2026.10 or older, use HACS → ⋮ → Custom repositories instead.
 
-## Status
+## The editor
 
-Early scaffold. The panel is a placeholder test page until the niimblue fork is built
-into `custom_components/niimbot_designer/www/`.
+The panel is the [niimblue fork](https://github.com/bombledmonk/niimblue/tree/home-assistant)
+(`home-assistant` branch), built into `custom_components/niimbot_designer/www/`. Inside
+Home Assistant it shows the printer's HA status instead of the Bluetooth connector, prints
+through Home Assistant, and adds a library button (history icon) for print history and
+saved designs. `www/FRONTEND_COMMIT` records the fork commit; rebuild with
+`scripts/update-frontend.ps1`. A plain test page is at `/niimbot_designer_static/test.html`.
 
 Verified on a D110_M with 12 × 40 mm labels: designs are 320 × 96 dots, sent with
-`rotate: 90`; keep about 1 mm of margin at the label ends.
+a quarter turn (the editor sends `rotate: 270` for niimblue's "left" print direction, so
+the left edge prints first); keep about 1 mm of margin at the label ends.
 
 ## WebSocket API
 

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Label Designer</title>
+<style>
+  :root { --bg: #fafafa; --fg: #212121; --muted: #757575; --card: #fff; --line: #e0e0e0; --accent: #03a9f4; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111; --fg: #e1e1e1; --muted: #9e9e9e; --card: #1c1c1c; --line: #333; } }
+  body { margin: 0; padding: 16px; font: 14px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; max-width: 720px; }
+  h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  input, button { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+  button { background: var(--accent); color: #fff; border: 0; cursor: pointer; } button:disabled { opacity: .5; }
+  canvas { border: 1px dashed var(--line); image-rendering: pixelated; width: 320px; max-width: 100%; background: #fff; }
+  table { border-collapse: collapse; width: 100%; } td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
+  td img { height: 32px; background: #fff; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Label Designer</h1>
+  <div class="muted">Placeholder page. The niimblue editor replaces it once the fork is built into <code>www/</code>.</div>
+  <div id="printer" class="muted" style="margin-top:8px">Connecting to Home Assistant…</div>
+</div>
+
+<div class="card">
+  <h2>Test print (12 × 40 mm)</h2>
+  <input id="text" value="Hello from HA" maxlength="40">
+  <button id="print">Print</button>
+  <div style="margin-top:12px"><canvas id="cv" width="320" height="96"></canvas></div>
+  <div id="msg" class="muted"></div>
+</div>
+
+<div class="card">
+  <h2>History</h2>
+  <table id="history"><tbody></tbody></table>
+</div>
+
+<script>
+// Same-origin iframe inside HA: borrow the logged-in hass object from the parent.
+function getHass() {
+  try { return window.parent.document.querySelector("home-assistant").hass; } catch { return null; }
+}
+const W = 320, H = 96, MARGIN = 8; // 1 mm safe margin at 203 DPI
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+function render() {
+  const cv = $("cv"), g = cv.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
+  g.strokeStyle = "#000"; g.lineWidth = 2; g.strokeRect(MARGIN, MARGIN, W - 2 * MARGIN, H - 2 * MARGIN);
+  g.fillStyle = "#000"; g.font = "bold 28px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText($("text").value, W / 2, H / 2, W - 4 * MARGIN);
+  // Threshold to pure black/white so HA prints exactly what is shown.
+  const img = g.getImageData(0, 0, W, H), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = (d[i] + d[i + 1] + d[i + 2]) / 3 < 128 ? 0 : 255;
+    d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return cv.toDataURL("image/png");
+}
+
+async function refresh(hass) {
+  const states = Object.values(hass.states).filter((s) => s.entity_id.includes("niimbot"));
+  const pick = (suffix) => states.find((s) => s.entity_id.endsWith(suffix))?.state ?? "?";
+  $("printer").textContent =
+    `Labels left: ${pick("_labels_remaining")} / ${pick("_labels_total")} · Battery: ${pick("_battery")}%`;
+  const { entries } = await hass.connection.sendMessagePromise({ type: "niimbot_designer/list" });
+  const rows = entries.map((e) => {
+    const last = e.prints.at(-1);
+    const when = last ? new Date(last.at).toLocaleString() : "never printed";
+    return `<tr><td><img src="${esc(e.png)}" alt=""></td><td>${esc(e.name ?? "(untitled)")}<br><span class="muted">${when} · ${e.prints.length} print(s)${last && !last.ok ? " · failed" : ""}</span></td>` +
+      `<td><button data-id="${e.id}">Reprint</button></td></tr>`;
+  });
+  $("history").tBodies[0].innerHTML = rows.join("") || `<tr><td class="muted">Nothing printed yet.</td></tr>`;
+}
+
+async function send(hass, msg) {
+  $("msg").textContent = "Printing…";
+  try {
+    await hass.connection.sendMessagePromise({ type: "niimbot_designer/print", ...msg });
+    $("msg").textContent = "Printed.";
+  } catch (err) {
+    $("msg").textContent = `Failed: ${err.message ?? err.code ?? err}`;
+  }
+  refresh(hass);
+}
+
+const hass = getHass();
+render();
+$("text").addEventListener("input", render);
+if (!hass) {
+  $("printer").textContent = "Open this page from the Home Assistant sidebar.";
+  $("print").disabled = true;
+} else {
+  refresh(hass);
+  $("print").addEventListener("click", () =>
+    send(hass, { png: render(), width: W, height: H, rotate: 90, name: $("text").value }));
+  $("history").addEventListener("click", (ev) => {
+    const id = ev.target.dataset?.id;
+    if (id) send(hass, { entry_id: id });
+  });
+}
+</script>
+</body>
+</html>
