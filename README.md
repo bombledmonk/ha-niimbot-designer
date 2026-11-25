@@ -23,11 +23,15 @@ from the panel or with the `niimbot_designer.reprint` action. Each print fires a
 
 - The [NIIMBOT integration](https://github.com/eigger/hass-niimbot) set up with your printer.
 
-## Install (HACS)
+## Install (Marketplace, Home Assistant 2026.11+)
 
-1. HACS → ⋮ → Custom repositories → add this repo as type **Integration**.
-2. Install **NIIMBOT Label Designer** and restart Home Assistant.
+1. Settings → Marketplace → **Add from link** → `bombledmonk/ha-niimbot-designer`
+   (type **Integration** if asked). The first custom repository asks you to connect
+   GitHub with a device code.
+2. Open the repository, select **Install**, then restart Home Assistant if a repair asks for it.
 3. Settings → Devices & services → Add integration → **NIIMBOT Label Designer**.
+
+On Home Assistant 2026.10 or older, use HACS → ⋮ → Custom repositories instead.
 
 ## Status
 
