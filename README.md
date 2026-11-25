@@ -43,8 +43,14 @@ saved designs. `www/FRONTEND_COMMIT` records the fork commit; rebuild with
 `scripts/update-frontend.ps1`. A plain test page is at `/niimbot_designer_static/test.html`.
 
 Verified on a D110_M with 12 × 40 mm labels: designs are 320 × 96 dots, sent with
-a quarter turn (the editor sends `rotate: 270` for niimblue's "left" print direction, so
-the left edge prints first); keep about 1 mm of margin at the label ends.
+a quarter turn. hass-niimbot rotates clockwise, so the editor sends `rotate: 90` for
+niimblue's "left" print direction and the left edge prints first. Keep about 1 mm of
+margin at the label ends. The first time the editor sees a roll (from hass-niimbot's
+label info, e.g. `T12*40`), it sizes the label to match; a size you pick afterwards is kept.
+
+`scripts/ha-ws.ps1` sends one WebSocket command to Home Assistant from a PC, using a
+long-lived access token stored DPAPI-encrypted under `%USERPROFILE%\.secrets` (see the
+script's header), e.g. `scripts/ha-ws.ps1 -Type niimbot_designer/list -Url https://ha.example.com`.
 
 ## WebSocket API
 
